@@ -2,10 +2,7 @@ import gym
 from gym.spaces import Tuple
 from gym.vector.utils.spaces import batch_space
 
-FINAL_STATE_KEY = "final_state"
-
-__all__ = ['VectorEnv', 'FINAL_STATE_KEY']
-
+__all__ = ['VectorEnv']
 
 
 class VectorEnv(gym.Env):
