@@ -76,16 +76,20 @@ class SyncVectorEnv(VectorEnv):
         self._actions = actions
  
     def step_wait(self):
-        observations, infos = [], []
+        observations, rewards, dones, infos = [], [], [], []
         for i, (env, action) in enumerate(zip(self.envs, self._actions)):
-            observation, self._rewards[i], self._dones[i], info = env.step(action)
+            observation, reward, done, info = env.step(action)
             # Do nothing if the env is a VectorEnv, since it will automatically
             # reset the envs that are done if needed in the 'step' method and
             # return the initial observation instead of the final observation.
-            if not isinstance(env, VectorEnv) and self._dones[i]:
+            if not isinstance(env.unwrapped, VectorEnv) and done:
                 observation = env.reset()
             observations.append(observation)
+            rewards.append(reward)
+            dones.append(done)
             infos.append(info)
+        self._rewards = np.stack(rewards)
+        self._dones = np.stack(dones)
         self.observations = concatenate(observations, self.observations, self.single_observation_space)
 
         return (deepcopy(self.observations) if self.copy else self.observations,
