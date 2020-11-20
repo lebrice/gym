@@ -5,6 +5,7 @@ from gym import logger
 from gym.vector.vector_env import VectorEnv
 from gym.vector.utils import concatenate, create_empty_array
 
+
 __all__ = ['SyncVectorEnv']
 
 
@@ -43,8 +44,12 @@ class SyncVectorEnv(VectorEnv):
         self._check_observation_spaces()
         self.observations = create_empty_array(self.single_observation_space,
             n=self.num_envs, fn=np.zeros)
-        self._rewards = np.zeros((self.num_envs,), dtype=np.float64)
-        self._dones = np.zeros((self.num_envs,), dtype=np.bool_)
+        
+        shape = (self.num_envs,)
+        if isinstance(self.envs[0].unwrapped, VectorEnv):
+            shape += (self.envs[0].num_envs,)
+        self._rewards = np.zeros(shape, dtype=np.float64)
+        self._dones = np.zeros(shape, dtype=np.bool_)
         self._actions = None
 
     def seed(self, seeds=None):
@@ -65,25 +70,27 @@ class SyncVectorEnv(VectorEnv):
             observations.append(observation)
         self.observations = concatenate(observations, self.observations,
             self.single_observation_space)
-
         return deepcopy(self.observations) if self.copy else self.observations
 
     def step_async(self, actions):
         self._actions = actions
-
+ 
     def step_wait(self):
         observations, infos = [], []
         for i, (env, action) in enumerate(zip(self.envs, self._actions)):
             observation, self._rewards[i], self._dones[i], info = env.step(action)
-            if self._dones[i]:
+            # Do nothing if the env is a VectorEnv, since it will automatically
+            # reset the envs that are done if needed in the 'step' method and
+            # return the initial observation instead of the final observation.
+            if not isinstance(env, VectorEnv) and self._dones[i]:
                 observation = env.reset()
             observations.append(observation)
             infos.append(info)
-        self.observations = concatenate(observations, self.observations,
-            self.single_observation_space)
+        self.observations = concatenate(observations, self.observations, self.single_observation_space)
 
         return (deepcopy(self.observations) if self.copy else self.observations,
             np.copy(self._rewards), np.copy(self._dones), infos)
+
 
     def close_extras(self, **kwargs):
         [env.close() for env in self.envs]

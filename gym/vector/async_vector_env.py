@@ -339,6 +339,16 @@ def _worker(index, env_fn, pipe, parent_pipe, shared_memory, error_queue):
     assert shared_memory is None
     env = env_fn()
     parent_pipe.close()
+
+    def step_fn(actions):
+        observation, reward, done, info = env.step(actions)
+        # Do nothing if the env is a VectorEnv, since it will automatically
+        # reset the envs that are done if needed in the 'step' method and return
+        # the initial observation instead of the final observation.
+        if not isinstance(env, VectorEnv) and done:
+            observation = env.reset()
+        return observation, reward, done, info
+
     try:
         while True:
             command, data = pipe.recv()
@@ -346,9 +356,7 @@ def _worker(index, env_fn, pipe, parent_pipe, shared_memory, error_queue):
                 observation = env.reset()
                 pipe.send((observation, True))
             elif command == 'step':
-                observation, reward, done, info = env.step(data)
-                if done:
-                    observation = env.reset()
+                observation, reward, done, info = step_fn(data)
                 pipe.send(((observation, reward, done, info), True))
             elif command == 'seed':
                 env.seed(data)
@@ -374,6 +382,16 @@ def _worker_shared_memory(index, env_fn, pipe, parent_pipe, shared_memory, error
     env = env_fn()
     observation_space = env.observation_space
     parent_pipe.close()
+
+    def step_fn(actions):
+        observation, reward, done, info = env.step(actions)
+        # Do nothing if the env is a VectorEnv, since it will automatically
+        # reset the envs that are done if needed in the 'step' method and return
+        # the initial observation instead of the final observation.
+        if not isinstance(env, VectorEnv) and done:
+            observation = env.reset()
+        return observation, reward, done, info
+
     try:
         while True:
             command, data = pipe.recv()
@@ -383,9 +401,7 @@ def _worker_shared_memory(index, env_fn, pipe, parent_pipe, shared_memory, error
                                        observation_space)
                 pipe.send((None, True))
             elif command == 'step':
-                observation, reward, done, info = env.step(data)
-                if done:
-                    observation = env.reset()
+                observation, reward, done, info = step_fn(data)
                 write_to_shared_memory(index, observation, shared_memory,
                                        observation_space)
                 pipe.send(((None, reward, done, info), True))
