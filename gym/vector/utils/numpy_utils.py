@@ -68,16 +68,18 @@ def concatenate_base(space: Space,
 def concatenate_tuple(space: spaces.Tuple,
                       items: Union[list, tuple],
                       out: Union[tuple, dict, np.ndarray]) -> tuple:
-    return tuple(concatenate([item[i] for item in items],
-        out[i], subspace) for (i, subspace) in enumerate(space.spaces))
+    return tuple(concatenate(subspace, [item[i] for item in items], out=out[i])
+                 for (i, subspace) in enumerate(space.spaces))
 
 
 @concatenate.register(spaces.Dict)
 def concatenate_dict(space: spaces.Dict,
                      items: Union[list, tuple],
                      out: Union[tuple, dict, np.ndarray]) -> OrderedDict:
-    return OrderedDict([(key, concatenate([item[key] for item in items],
-        out[key], subspace)) for (key, subspace) in space.spaces.items()])
+    return OrderedDict([(
+        key, concatenate(subspace, [item[key] for item in items], out=out[key])
+        ) for (key, subspace) in space.spaces.items()
+    ])
 
 
 @concatenate.register(spaces.Space)
