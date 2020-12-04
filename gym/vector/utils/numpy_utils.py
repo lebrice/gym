@@ -11,7 +11,6 @@ from gym.vector.utils.spaces import _BaseGymSpaces
 __all__ = ['concatenate', 'create_empty_array']
 
 
-
 @singledispatch
 def concatenate(space: Space,
                 items: Sequence,
@@ -59,23 +58,23 @@ def concatenate(space: Space,
 @concatenate.register(spaces.MultiDiscrete)
 @concatenate.register(spaces.MultiBinary)
 def _concatenate_base(space: Space,
-                     items: Union[list, tuple],
-                     out: Union[tuple, dict, np.ndarray]) -> np.ndarray:
+                      items: Union[list, tuple],
+                      out: Union[tuple, dict, np.ndarray]) -> np.ndarray:
     return np.stack(items, axis=0, out=out)
 
 
 @concatenate.register(spaces.Tuple)
 def _concatenate_tuples(space: spaces.Tuple,
-                      items: Union[list, tuple],
-                      out: Union[tuple, dict, np.ndarray]) -> tuple:
+                        items: Union[list, tuple],
+                        out: Union[tuple, dict, np.ndarray]) -> tuple:
     return tuple(concatenate(subspace, [item[i] for item in items], out=out[i])
                  for (i, subspace) in enumerate(space.spaces))
 
 
 @concatenate.register(spaces.Dict)
 def _concatenate_dicts(space: spaces.Dict,
-                     items: Union[list, tuple],
-                     out: Union[tuple, dict, np.ndarray]) -> OrderedDict:
+                       items: Union[list, tuple],
+                       out: Union[tuple, dict, np.ndarray]) -> OrderedDict:
     return OrderedDict([(
         key, concatenate(subspace, [item[key] for item in items], out=out[key])
         ) for (key, subspace) in space.spaces.items()
@@ -84,8 +83,8 @@ def _concatenate_dicts(space: spaces.Dict,
 
 @concatenate.register(spaces.Space)
 def _concatenate_custom(space: Space,
-                       items: Union[list, tuple],
-                       out: Union[tuple, dict, np.ndarray]) -> Union[tuple, dict, np.ndarray]:
+                        items: Union[list, tuple],
+                        out: Union[tuple, dict, np.ndarray]) -> Union[tuple, dict, np.ndarray]:
     return tuple(items)
 
 
