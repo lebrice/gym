@@ -58,14 +58,14 @@ def concatenate(space: Space,
 @concatenate.register(spaces.Discrete)
 @concatenate.register(spaces.MultiDiscrete)
 @concatenate.register(spaces.MultiBinary)
-def concatenate_base(space: Space,
+def _concatenate_base(space: Space,
                      items: Union[list, tuple],
                      out: Union[tuple, dict, np.ndarray]) -> np.ndarray:
     return np.stack(items, axis=0, out=out)
 
 
 @concatenate.register(spaces.Tuple)
-def concatenate_tuple(space: spaces.Tuple,
+def _concatenate_tuples(space: spaces.Tuple,
                       items: Union[list, tuple],
                       out: Union[tuple, dict, np.ndarray]) -> tuple:
     return tuple(concatenate(subspace, [item[i] for item in items], out=out[i])
@@ -73,7 +73,7 @@ def concatenate_tuple(space: spaces.Tuple,
 
 
 @concatenate.register(spaces.Dict)
-def concatenate_dict(space: spaces.Dict,
+def _concatenate_dicts(space: spaces.Dict,
                      items: Union[list, tuple],
                      out: Union[tuple, dict, np.ndarray]) -> OrderedDict:
     return OrderedDict([(
@@ -83,7 +83,7 @@ def concatenate_dict(space: spaces.Dict,
 
 
 @concatenate.register(spaces.Space)
-def concatenate_custom(space: Space,
+def _concatenate_custom(space: Space,
                        items: Union[list, tuple],
                        out: Union[tuple, dict, np.ndarray]) -> Union[tuple, dict, np.ndarray]:
     return tuple(items)
@@ -132,20 +132,20 @@ def create_empty_array(space: Space,
 @create_empty_array.register(spaces.Discrete)
 @create_empty_array.register(spaces.MultiDiscrete)
 @create_empty_array.register(spaces.MultiBinary)
-def create_empty_array_base(space: Space, n: int = 1, fn: Callable = np.zeros) -> Union[tuple, dict, np.ndarray]:
+def _create_empty_array_base(space: Space, n: int = 1, fn: Callable = np.zeros) -> Union[tuple, dict, np.ndarray]:
     shape = space.shape if (n is None) else (n,) + space.shape
     return fn(shape, dtype=space.dtype)
 
 @create_empty_array.register(spaces.Tuple)
-def create_empty_array_tuple(space: spaces.Tuple, n: int = 1, fn: Callable = np.zeros) -> tuple:
+def _create_empty_array_tuple(space: spaces.Tuple, n: int = 1, fn: Callable = np.zeros) -> tuple:
     return tuple(create_empty_array(subspace, n=n, fn=fn)
         for subspace in space.spaces)
 
 @create_empty_array.register(spaces.Dict)
-def create_empty_array_dict(space: spaces.Dict, n: int = 1, fn: Callable = np.zeros) -> OrderedDict:
+def _create_empty_array_dict(space: spaces.Dict, n: int = 1, fn: Callable = np.zeros) -> OrderedDict:
     return OrderedDict([(key, create_empty_array(subspace, n=n, fn=fn))
         for (key, subspace) in space.spaces.items()])
 
 @create_empty_array.register(Space)
-def create_empty_array_custom(space: Space, n: int = 1, fn: Callable = np.zeros) -> tuple:
+def _create_empty_array_custom(space: Space, n: int = 1, fn: Callable = np.zeros) -> tuple:
     return ()

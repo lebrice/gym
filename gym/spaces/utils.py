@@ -81,26 +81,26 @@ def flatten(space: Space, x) -> np.ndarray:
 
 
 @flatten.register(Box)
-def flatten_box(space: Box, x) -> np.ndarray:
+def _flatten_box(space: Box, x) -> np.ndarray:
     return np.asarray(x, dtype=space.dtype).flatten()
 
    
 @flatten.register(Discrete)
-def flatten_discrete(space: Discrete, x) -> np.ndarray:
+def _flatten_discrete(space: Discrete, x) -> np.ndarray:
     onehot = np.zeros(space.n, dtype=space.dtype)
     onehot[x] = 1.0
     return onehot
 
 
 @flatten.register(Tuple)
-def flatten_tuple(space: Tuple, x) -> np.ndarray:
+def _flatten_tuple(space: Tuple, x) -> np.ndarray:
     return np.concatenate([
         flatten(s, x_part) for s, x_part in zip(space.spaces, x)
     ])
 
 
 @flatten.register(Dict)
-def flatten_dict(space: Dict, x: dict) -> np.ndarray:
+def _flatten_dict(space: Dict, x: dict) -> np.ndarray:
     return np.concatenate([
         flatten(s, x[key]) for key, s in space.spaces.items()
     ])
@@ -108,7 +108,7 @@ def flatten_dict(space: Dict, x: dict) -> np.ndarray:
 
 @flatten.register(MultiBinary)
 @flatten.register(MultiDiscrete)
-def flatten_multi_binary(space: Union[MultiBinary, MultiDiscrete], x) -> np.ndarray:
+def _flatten_multi_binary(space: Union[MultiBinary, MultiDiscrete], x) -> np.ndarray:
     return np.asarray(x, dtype=space.dtype).flatten()
 
 
@@ -134,17 +134,17 @@ def unflatten(space: Space, x: np.ndarray):
 
 
 @unflatten.register(Box)
-def unflatten_box(space: Box, x: np.ndarray) -> np.ndarray:
+def _unflatten_box(space: Box, x: np.ndarray) -> np.ndarray:
     return np.asarray(x, dtype=space.dtype).reshape(space.shape)
 
 
 @unflatten.register(Discrete)
-def unflatten_discrete(space: Discrete, x: np.ndarray) -> int:
+def _unflatten_discrete(space: Discrete, x: np.ndarray) -> int:
     return int(np.nonzero(x)[0][0])
 
 
 @unflatten.register(Tuple)
-def unflatten_tuple(space: Tuple, x: np.ndarray) -> tuple:
+def _unflatten_tuple(space: Tuple, x: np.ndarray) -> tuple:
     dims = [flatdim(s) for s in space.spaces]
     list_flattened = np.split(x, np.cumsum(dims)[:-1])
     list_unflattened = [
@@ -155,7 +155,7 @@ def unflatten_tuple(space: Tuple, x: np.ndarray) -> tuple:
 
 
 @unflatten.register(Dict)
-def unflatten_dict(space: Dict, x: np.ndarray) -> OrderedDict:
+def _unflatten_dict(space: Dict, x: np.ndarray) -> OrderedDict:
     dims = [flatdim(s) for s in space.spaces.values()]
     list_flattened = np.split(x, np.cumsum(dims)[:-1])
     list_unflattened = [
@@ -168,7 +168,7 @@ def unflatten_dict(space: Dict, x: np.ndarray) -> OrderedDict:
 
 @unflatten.register(MultiBinary)
 @unflatten.register(MultiDiscrete)
-def unflatten_multi(space: Union[MultiBinary, MultiDiscrete],
+def _unflatten_multi(space: Union[MultiBinary, MultiDiscrete],
                     x: np.ndarray) -> np.ndarray:
     return np.asarray(x, dtype=space.dtype).reshape(space.shape)
 
@@ -222,17 +222,17 @@ def flatten_space(space: Space) -> Box:
 
 
 @flatten_space.register(Box)
-def flatten_space_box(space: Box) -> Box:
+def _flatten_box_space(space: Box) -> Box:
     return Box(space.low.flatten(), space.high.flatten(), dtype=space.dtype)
 
 
 @flatten_space.register(Discrete)
-def flatten_space_discrete(space: Discrete) -> Box:
+def _flatten_discrete_space(space: Discrete) -> Box:
     return Box(low=0, high=1, shape=(space.n, ), dtype=space.dtype)
 
 
 @flatten_space.register(Tuple)
-def flatten_space_tuple(space: Tuple) -> Box:
+def _flatten_tuple_space(space: Tuple) -> Box:
     spaces = [flatten_space(s) for s in space.spaces]
     return Box(
         low=np.concatenate([s.low for s in spaces]),
@@ -242,7 +242,7 @@ def flatten_space_tuple(space: Tuple) -> Box:
 
 
 @flatten_space.register(Dict)
-def flatten_space_dict(space: Dict) -> Box:
+def _flatten_dict_space(space: Dict) -> Box:
     spaces = [flatten_space(s) for s in space.spaces.values()]
     return Box(
         low=np.concatenate([s.low for s in spaces]),
@@ -251,12 +251,12 @@ def flatten_space_dict(space: Dict) -> Box:
     )
 
 @flatten_space.register(MultiBinary)
-def flatten_space_multi_binary(space: MultiBinary) -> Box:
+def _flatten_multi_binary_space(space: MultiBinary) -> Box:
     return Box(low=0, high=1, shape=(space.n,), dtype=space.dtype)
 
 
 @flatten_space.register(MultiDiscrete)
-def flatten_space_multi_discrete(space: MultiDiscrete) -> Box:
+def _flatten_multi_discrete_space(space: MultiDiscrete) -> Box:
     return Box(
         low=np.zeros_like(space.nvec),
         high=space.nvec,
