@@ -45,4 +45,4 @@ class Tuple(Space):
         return len(self.spaces)
       
     def __eq__(self, other):
-        return isinstance(other, Tuple) and self.spaces == other.spaces
+        return isinstance(other, Tuple) and tuple(self.spaces) == tuple(other.spaces)

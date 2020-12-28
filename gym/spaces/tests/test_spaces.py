@@ -1,10 +1,10 @@
 import json  # note: ujson fails this test due to float equality
 from copy import copy
-
+from typing import Sequence
 import numpy as np
 import pytest
 
-from gym.spaces import Tuple, Box, Discrete, MultiDiscrete, MultiBinary, Dict
+from gym.spaces import Tuple, Box, Discrete, MultiDiscrete, MultiBinary, Dict, Space
 
 
 @pytest.mark.parametrize("space", [
@@ -125,3 +125,25 @@ def test_class_inequality(spaces):
 def test_bad_space_calls(space_fn):
     with pytest.raises(AssertionError):
         space_fn()
+
+
+@pytest.mark.parametrize("inner_spaces", [
+    (Discrete(5), MultiBinary(5)),
+    (Box(low=np.array([-10, 0]), high=np.array([10,10]), dtype=np.float32), MultiDiscrete([2, 2, 8])),
+    (Box(low=0, high=255, shape=(64, 64, 3), dtype=np.uint8), Box(low=0, high=255, shape=(32, 32, 3), dtype=np.uint8)),
+    (Dict({"position": Discrete(5)}), Tuple([Discrete(5)])),
+    (Dict({"position": Discrete(5)}), Discrete(5)),
+    (Tuple((Discrete(5),)), Discrete(5)),
+    (Box(low=np.array([-np.inf,0.]), high=np.array([0., np.inf])),
+        Box(low=np.array([-np.inf, 1.]), high=np.array([0., np.inf])))
+])
+def test_tuple_with_list_equals_with_tuple(inner_spaces: Sequence[Space]):
+    """ Tuple spaces should be considered equal if their spaces match,
+    regardless of if they were first passed in as lists or tuples.
+    """
+    space_1 = Tuple(tuple(inner_spaces))
+    space_2 = Tuple(list(inner_spaces))
+    assert space_1 == space_2
+    assert space_2 == space_1
+
+
